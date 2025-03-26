@@ -10,6 +10,90 @@ export default function CarRace() {
   const [coins, setCoins] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [goalReached, setGoalReached] = useState(false);
+  const [playerOneScore, setPlayerOneScore] = useState(0);
+  const [playerTwoScore, setPlayerTwoScore] = useState(0);
+  const [playerOneLives, setPlayerOneLives] = useState(3);
+  const [playerTwoLives, setPlayerTwoLives] = useState(3);
+
+  
+
+
+  function checkCoinCollisions(coins, setPlayers, setCoins) {
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) => {
+        const collectedCoins = coins.filter(
+          (coin) =>
+            player.x < coin.x + 20 &&
+            player.x + player.width > coin.x &&
+            player.y < coin.y + 20 &&
+            player.y + player.height > coin.y
+        );
+  
+        if (collectedCoins.length > 0) {
+          setCoins((prevCoins) =>
+            prevCoins.filter((coin) => !collectedCoins.includes(coin))
+          );
+          console.log(coins)
+          return { ...player, score: player.score + collectedCoins.length * 10 };
+        }
+  
+        // console.log(player)
+        return player;
+      })
+    );
+  }
+  
+
+  function checkObstacleCollisions(obstacles, setPlayers, setObstacles) {
+        setPlayers((prevPlayers) =>
+          prevPlayers.map((player) => {
+            const collidedObstacles = obstacles.filter(
+              (obstacle) =>
+                player.x < obstacle.x + 20 &&
+                player.x + player.width > obstacle.x &&
+                player.y < obstacle.y + 20 &&
+                player.y + player.height > obstacle.y
+            );
+      
+            if (collidedObstacles.length > 0) {
+              setObstacles((prevObstacles) =>
+                prevObstacles.filter((obstacle) => !collidedObstacles.includes(obstacle))
+              );
+
+            //   console.log(obstacles)
+      
+              return { ...player, lives: player.lives - collidedObstacles.length * 1 };
+            }
+      
+            // console.log(player)
+            return player;
+          })
+        );
+      
+      
+  }
+  
+//   useEffect(() => {
+//     const runChecks = async () =>{
+//         await checkCoinCollisions(coins, setPlayers, setCoins);
+//         await checkObstacleCollisions(obstacles, setPlayers);
+
+//         if (players.some((player) => player.lives <= 0)) {
+//             setGameOver(true);
+//         }
+//     }
+
+//     runChecks();
+//   }, [players, coins, obstacles]);
+
+  
+  
+  useEffect(() => {
+    setPlayerOneScore(players[0].score);
+    setPlayerTwoScore(players[1].score);
+    setPlayerOneLives(players[0].lives);
+    setPlayerTwoLives(players[1].lives);
+  }, [players]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,24 +129,16 @@ export default function CarRace() {
     const interval = setInterval(() => {
       setObstacles((prev) => prev.map((o) => ({ ...o, y: o.y + 5 })).filter((o) => o.y < 400));
       setCoins((prev) => prev.map((c) => ({ ...c, y: c.y + 3 })).filter((c) => c.y < 400));
-
-      setPlayers((prev) =>
-        prev.map((player) => {
-          const hitObstacle = obstacles.some((o) => Math.abs(o.x - player.x) < 30 && o.y > 350);
-          const collectedCoin = coins.some((c) => Math.abs(c.x - player.x) < 30 && c.y > 350);
-
-          if (hitObstacle) return { ...player, lives: player.lives - 1 };
-          if (collectedCoin) return { ...player, score: player.score + 10 };
-          return player;
-        })
-      );
-
-      if (players.some((player) => player.lives <= 0)) {
-        setGameOver(true);
-      }
-    }, 100);
+    }, 50);
+  
     return () => clearInterval(interval);
-  }, [obstacles, coins, players]);
+  }, []); 
+  
+  
+  useEffect(() => {
+    checkCoinCollisions(coins, setPlayers, setCoins);
+    checkObstacleCollisions(obstacles, setPlayers, setObstacles);
+  }, [coins, obstacles]);
 
   useEffect(() => {
     const goalTimeout = setTimeout(() => {
@@ -110,8 +186,8 @@ export default function CarRace() {
             ))}
           </div>
           <div>
-            <p>Punkte Spieler 1: {players[0].score} | Leben Spieler 1: {players[0].lives}</p>
-            <p>Punkte Spieler 2: {players[1].score} | Leben Spieler 2: {players[1].lives}</p>
+            <p>Punkte Spieler 1: {playerOneScore} | Leben Spieler 1: {playerOneLives}</p>
+            <p>Punkte Spieler 2: {playerTwoScore} | Leben Spieler 2: {playerTwoLives}</p>
           </div>
         </>
       )}
