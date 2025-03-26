@@ -1,25 +1,120 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState, useEffect } from "react";
+import "./App.css"; // CSS für das Styling
 
-function App() {
+export default function CarRace() {
+  const [players, setPlayers] = useState([
+    { x: 100, y: 350, width: 50, height: 100, imageSrc: "car1.png", score: 0, lives: 3, keyLeft: "ArrowLeft", keyRight: "ArrowRight", keyUp: "ArrowUp", keyDown: "ArrowDown" },
+    { x: 200, y: 350, width: 50, height: 100, imageSrc: "car2.png", score: 0, lives: 3, keyLeft: "a", keyRight: "d", keyUp: "w", keyDown: "s" }
+  ]);
+  const [obstacles, setObstacles] = useState([]);
+  const [coins, setCoins] = useState([]);
+  const [gameOver, setGameOver] = useState(false);
+  const [goalReached, setGoalReached] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setObstacles((prev) => [...prev, { x: Math.random() * 300, y: 0 }]);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [gameOver, goalReached]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCoins((prev) => [...prev, { x: Math.random() * 300, y: 0 }]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [gameOver, goalReached]);
+
+  useEffect(() => {
+    const handleKeydown = (e) => {
+      setPlayers((prev) =>
+        prev.map((player) => {
+          if (e.key === player.keyLeft && player.x > 0) return { ...player, x: player.x - 10 };
+          if (e.key === player.keyRight && player.x < 300) return { ...player, x: player.x + 10 };
+          if (e.key === player.keyUp && player.y > 0) return { ...player, y: player.y - 10 };
+          if (e.key === player.keyDown && player.y < 400) return { ...player, y: player.y + 10 };
+          return player;
+        })
+      );
+    };
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setObstacles((prev) => prev.map((o) => ({ ...o, y: o.y + 5 })).filter((o) => o.y < 400));
+      setCoins((prev) => prev.map((c) => ({ ...c, y: c.y + 3 })).filter((c) => c.y < 400));
+
+      setPlayers((prev) =>
+        prev.map((player) => {
+          const hitObstacle = obstacles.some((o) => Math.abs(o.x - player.x) < 30 && o.y > 350);
+          const collectedCoin = coins.some((c) => Math.abs(c.x - player.x) < 30 && c.y > 350);
+
+          if (hitObstacle) return { ...player, lives: player.lives - 1 };
+          if (collectedCoin) return { ...player, score: player.score + 10 };
+          return player;
+        })
+      );
+
+      if (players.some((player) => player.lives <= 0)) {
+        setGameOver(true);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [obstacles, coins, players]);
+
+  useEffect(() => {
+    const goalTimeout = setTimeout(() => {
+      setGoalReached(true);
+    }, 120000);
+    return () => clearTimeout(goalTimeout);
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="game-container">
+      <h1>2-Spieler Autorennen</h1>
+      {gameOver ? (
+        <h2>Game Over!</h2>
+      ) : goalReached ? (
+        <h2>Ziellinie erreicht!</h2>
+      ) : (
+        <>
+          <div className="track">
+            {players.map((player, index) => (
+              <div
+                key={index}
+                className="car"
+                style={{
+                  left: player.x + "px",
+                  top: player.y + "px",
+                  width: player.width + "px",
+                  height: player.height + "px",
+                  backgroundImage: `url(${process.env.PUBLIC_URL}/${player.imageSrc})`,
+                }}
+              ></div>
+            ))}
+            {obstacles.map((obs, index) => (
+              <div
+                key={index}
+                className="obstacle"
+                style={{ left: obs.x + "px", top: obs.y + "px", width: "50px", height: "50px", backgroundColor: "black" }}
+              ></div>
+            ))}
+            {coins.map((coin, index) => (
+              <div
+                key={index}
+                className="coin"
+                style={{ left: coin.x + "px", top: coin.y + "px", width: "20px", height: "20px", backgroundColor: "gold" }}
+              ></div>
+            ))}
+          </div>
+          <div>
+            <p>Punkte Spieler 1: {players[0].score} | Leben Spieler 1: {players[0].lives}</p>
+            <p>Punkte Spieler 2: {players[1].score} | Leben Spieler 2: {players[1].lives}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
-
-export default App;
